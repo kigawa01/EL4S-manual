@@ -182,6 +182,6 @@ MonoBehaviour:
   connection: {fileID: 0}
   materialPrefabs:
   - materialType: 1
-    prefab: {fileID: 100100, guid: 6c61d094f0164d51a9007315cb77855e, type: 3}
+    prefab: {fileID: 11400100, guid: 6c61d094f0164d51a9007315cb77855e, type: 3}
   - materialType: 0
-    prefab: {fileID: 100200, guid: 67de6d9b2ce4468f83f6c04d39129a46, type: 3}
+    prefab: {fileID: 11400200, guid: 67de6d9b2ce4468f83f6c04d39129a46, type: 3}
