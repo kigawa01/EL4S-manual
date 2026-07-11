@@ -32,6 +32,8 @@ namespace EL4S.UI
             if (fadeGroup != null)
             {
                 fadeGroup.alpha = 0f;
+                fadeGroup.interactable = false;
+                fadeGroup.blocksRaycasts = false;
             }
         }
 
@@ -41,6 +43,12 @@ namespace EL4S.UI
             {
                 _fadeElapsed += Time.deltaTime;
                 fadeGroup.alpha = Mathf.Clamp01(_fadeElapsed / fadeInDuration);
+
+                if (fadeGroup.alpha >= 1f)
+                {
+                    fadeGroup.interactable = true;
+                    fadeGroup.blocksRaycasts = true;
+                }
             }
 
             if (floatingLogo != null)
