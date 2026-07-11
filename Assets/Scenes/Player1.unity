@@ -332,7 +332,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9110762fb9e0384583245472ced6615, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MaterialBase
-  Changed: 1
+  Changed: 0
   changedSprite: {fileID: 1813437582866609835, guid: 601780940fe0fdb46b72cc29111d26fe, type: 3}
   defaultStorage: {fileID: 703993012}
   materialType: 1
@@ -2792,7 +2792,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9110762fb9e0384583245472ced6615, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MaterialBase
-  Changed: 1
+  Changed: 0
   changedSprite: {fileID: 1813437582866609835, guid: 601780940fe0fdb46b72cc29111d26fe, type: 3}
   defaultStorage: {fileID: 703993012}
   materialType: 1

@@ -44,21 +44,22 @@ public class Check : MonoBehaviour
     {
         if(checkType == CheckType.Check2 || checkType == CheckType.Check3)
         {
-            if(CheckMaterial.Changed){ 
+           // if(CheckMaterial.Changed){ 
                 connection.SendAlchemyResult(new AlchemyResult
                 {
                     checkType = checkType
                 });
 
-                checkSpriteRenderer.enabled = true; }
+                checkSpriteRenderer.enabled = true; 
+        //}
         }
     }
 
     void Checka(string fromClient, AlchemyResult alchemyResult)
     {
-        if (alchemyResult.checkType == checkType)
-        {
-            checkSpriteRenderer.enabled = true;
-        }
+        //if (alchemyResult.checkType == checkType)
+        //{
+        //    checkSpriteRenderer.enabled = true;
+        //}
     }
 }
