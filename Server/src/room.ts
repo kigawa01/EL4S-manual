@@ -120,6 +120,8 @@ export class RoomRegistry {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
+    console.log(`[broadcast] room=${roomId} ${message.type}`, message);
+
     const data = JSON.stringify(message);
     for (const member of room.values()) {
       if (member.clientId === excludeClientId) continue;

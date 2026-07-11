@@ -8,6 +8,7 @@ const PORT = Number(process.env.PORT ?? 8080);
 const rooms = new RoomRegistry();
 
 function send(ws: WebSocket, message: ServerToClientMessage): void {
+  console.log(`[send] ${message.type}`, message);
   ws.send(JSON.stringify(message));
 }
 
@@ -36,9 +37,12 @@ wss.on("connection", (ws: WebSocket) => {
   ws.on("message", (raw) => {
     const message = parseClientMessage(raw.toString());
     if (!message) {
+      console.log(`[recv] invalid message: ${raw.toString()}`);
       send(ws, { type: "error", message: "invalid message" });
       return;
     }
+
+    console.log(`[recv] ${message.type}`, message);
 
     if (message.type === "match") {
       const result = rooms.match(message.clientId, ws);
