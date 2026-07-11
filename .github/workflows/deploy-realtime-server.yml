@@ -1,0 +1,21 @@
+name: Deploy el4s-realtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Server/**"
+      - ".github/workflows/deploy-realtime-server.yml"
+
+jobs:
+  release:
+    uses: kigawa-net/kigawa-net-k8s/.github/workflows/release.yml@main
+    with:
+      name: el4s-realtime
+      harborProject: private
+      manifestFile: el4s-realtime/deployment.yaml
+      repository: kigawa-net/kigawa-net-k8s
+      dockerFile: ./Server/Dockerfile
+    secrets:
+      HARBOR_PASS: ${{ secrets.HARBOR_PASS }}
+      GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
