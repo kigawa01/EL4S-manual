@@ -26,6 +26,13 @@ const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 wss.on("connection", (ws: WebSocket) => {
   let joined = false;
 
+  function requireJoined(): boolean {
+    if (!joined) {
+      send(ws, { type: "error", message: "not joined" });
+    }
+    return joined;
+  }
+
   ws.on("message", (raw) => {
     const message = parseClientMessage(raw.toString());
     if (!message) {
@@ -45,20 +52,20 @@ wss.on("connection", (ws: WebSocket) => {
     }
 
     if (message.type === "state") {
-      if (!joined) {
-        send(ws, { type: "error", message: "not joined" });
-        return;
-      }
+      if (!requireJoined()) return;
       rooms.broadcastState(ws, message.payload);
       return;
     }
 
     if (message.type === "alchemy-result") {
-      if (!joined) {
-        send(ws, { type: "error", message: "not joined" });
-        return;
-      }
+      if (!requireJoined()) return;
       rooms.broadcastAlchemyResult(ws, message.result);
+      return;
+    }
+
+    if (message.type === "item-transfer") {
+      if (!requireJoined()) return;
+      rooms.broadcastItemTransfer(ws, message.item);
     }
   });
 

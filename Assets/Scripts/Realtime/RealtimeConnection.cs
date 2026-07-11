@@ -10,7 +10,7 @@ namespace EL4S.Realtime
 {
     // Talks to the el4s-realtime WebSocket relay (Server/). Protocol mirrors
     // Server/src/protocol.ts: match / joined / peer-joined / peer-left / state /
-    // alchemy-result / error.
+    // alchemy-result / item-transfer / error.
     public class RealtimeConnection : MonoBehaviour
     {
         [SerializeField] private string serverUrl = "wss://el4s-realtime.kigawa.net/ws";
@@ -20,6 +20,7 @@ namespace EL4S.Realtime
         public event Action<string> PeerLeft;
         public event Action<string, PeerState> PeerStateReceived;
         public event Action<string, AlchemyResult> AlchemyResultReceived;
+        public event Action<string, ItemTransfer> ItemTransferReceived;
         public event Action<string> ConnectionFailed;
 
         public string ClientId { get; private set; }
@@ -135,6 +136,9 @@ namespace EL4S.Realtime
                 case "alchemy-result":
                     AlchemyResultReceived?.Invoke(msg.clientId, msg.result);
                     break;
+                case "item-transfer":
+                    ItemTransferReceived?.Invoke(msg.clientId, msg.item);
+                    break;
                 case "error":
                     Debug.LogWarning($"[RealtimeConnection] server error: {msg.message}");
                     ConnectionFailed?.Invoke(msg.message);
@@ -153,6 +157,11 @@ namespace EL4S.Realtime
         public void SendAlchemyResult(AlchemyResult result)
         {
             _ = SendJson(new AlchemyResultInMessage { type = "alchemy-result", result = result });
+        }
+
+        public void SendItemTransfer(ItemTransfer item)
+        {
+            _ = SendJson(new ItemTransferInMessage { type = "item-transfer", item = item });
         }
 
         public void Disconnect()
@@ -215,12 +224,14 @@ namespace EL4S.Realtime
         [Serializable] private class MatchMessage { public string type; public string clientId; }
         [Serializable] private class StateInMessage { public string type; public PeerState payload; }
         [Serializable] private class AlchemyResultInMessage { public string type; public AlchemyResult result; }
+        [Serializable] private class ItemTransferInMessage { public string type; public ItemTransfer item; }
 
         // Covers every server->client shape (joined/peer-joined/peer-left/state/
-        // alchemy-result/error) in one parse; JsonUtility leaves fields absent from
-        // the JSON at their default value. "result" is a separate field from
-        // "payload" (rather than reusing it for both state and alchemy-result)
-        // since JsonUtility can't deserialize one field into two different types.
+        // alchemy-result/item-transfer/error) in one parse; JsonUtility leaves
+        // fields absent from the JSON at their default value. Each payload-bearing
+        // message type gets its own field (payload/result/item) rather than
+        // sharing one, since JsonUtility can't deserialize a single field into
+        // different concrete types depending on the message type.
         [Serializable]
         private class IncomingMessage
         {
@@ -229,6 +240,7 @@ namespace EL4S.Realtime
             public string[] peers;
             public PeerState payload;
             public AlchemyResult result;
+            public ItemTransfer item;
             public string message;
         }
     }
