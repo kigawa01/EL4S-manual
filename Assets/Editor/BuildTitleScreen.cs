@@ -31,18 +31,26 @@ namespace EL4S.EditorTools
 
             EnsureEventSystem();
 
-            var canvasGo = GameObject.Find("TitleCanvas");
-            if (canvasGo == null)
+            var canvas = Object.FindFirstObjectByType<Canvas>();
+            GameObject canvasGo;
+            if (canvas == null)
             {
                 canvasGo = new GameObject("TitleCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+                canvas = canvasGo.GetComponent<Canvas>();
+            }
+            else
+            {
+                canvasGo = canvas.gameObject;
             }
 
-            var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = canvasGo.GetComponent<CanvasScaler>();
+            if (scaler == null) scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
+
+            if (canvasGo.GetComponent<GraphicRaycaster>() == null) canvasGo.AddComponent<GraphicRaycaster>();
 
             CreateTitleText(canvasGo.transform);
             var roomCodeInput = CreateRoomCodeInput(canvasGo.transform);
@@ -70,7 +78,7 @@ namespace EL4S.EditorTools
 
         private static void CreateTitleText(Transform parent)
         {
-            if (parent.Find("TitleText") != null) return;
+            if (FindDeep(parent, "TitleText") != null) return;
 
             var go = new GameObject("TitleText", typeof(Text));
             go.transform.SetParent(parent, false);
@@ -91,7 +99,7 @@ namespace EL4S.EditorTools
 
         private static InputField CreateRoomCodeInput(Transform parent)
         {
-            var existing = parent.Find("RoomCodeInput");
+            var existing = FindDeep(parent, "RoomCodeInput");
             if (existing != null) return existing.GetComponent<InputField>();
 
             var go = new GameObject("RoomCodeInput", typeof(Image), typeof(InputField));
@@ -136,7 +144,7 @@ namespace EL4S.EditorTools
 
         private static Button CreateJoinButton(Transform parent)
         {
-            var existing = parent.Find("JoinButton");
+            var existing = FindDeep(parent, "JoinButton");
             if (existing != null) return existing.GetComponent<Button>();
 
             var go = new GameObject("JoinButton", typeof(Image), typeof(Button));
@@ -170,7 +178,7 @@ namespace EL4S.EditorTools
 
         private static Text CreateStatusText(Transform parent)
         {
-            var existing = parent.Find("StatusText");
+            var existing = FindDeep(parent, "StatusText");
             if (existing != null) return existing.GetComponent<Text>();
 
             var go = new GameObject("StatusText", typeof(Text));
@@ -222,6 +230,16 @@ namespace EL4S.EditorTools
             serialized.FindProperty("joinButton").objectReferenceValue = joinButton;
             serialized.FindProperty("statusText").objectReferenceValue = statusText;
             serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Transform FindDeep(Transform root, string name)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == name) return t;
+            }
+
+            return null;
         }
 
         private static void StretchToParent(RectTransform rect)
