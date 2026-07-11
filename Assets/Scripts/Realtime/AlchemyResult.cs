@@ -1,5 +1,4 @@
 using System;
-using 
 
 namespace EL4S.Realtime
 {
