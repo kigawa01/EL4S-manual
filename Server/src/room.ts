@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { WebSocket } from "ws";
-import type { AlchemyResultPayload, ServerToClientMessage } from "./protocol.js";
+import type { AlchemyResultPayload, ItemTransferPayload, ServerToClientMessage } from "./protocol.js";
 
 const ROOM_CAPACITY = 2;
 
@@ -103,6 +103,10 @@ export class RoomRegistry {
 
   broadcastAlchemyResult(ws: WebSocket, result: AlchemyResultPayload): void {
     this.broadcastFromSender(ws, (clientId) => ({ type: "alchemy-result", clientId, result }));
+  }
+
+  broadcastItemTransfer(ws: WebSocket, item: ItemTransferPayload): void {
+    this.broadcastFromSender(ws, (clientId) => ({ type: "item-transfer", clientId, item }));
   }
 
   private broadcastFromSender(ws: WebSocket, buildMessage: (clientId: string) => ServerToClientMessage): void {

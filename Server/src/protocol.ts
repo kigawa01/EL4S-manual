@@ -38,18 +38,37 @@ export interface AlchemyResultMessageOut {
   result: AlchemyResultPayload;
 }
 
+export interface ItemTransferPayload {
+  itemId: string;
+}
+
+export interface ItemTransferMessageIn {
+  type: "item-transfer";
+  item: ItemTransferPayload;
+}
+
+export interface ItemTransferMessageOut {
+  type: "item-transfer";
+  clientId: string;
+  item: ItemTransferPayload;
+}
+
 export interface ErrorMessage {
   type: "error";
   message: string;
 }
 
-export type ClientToServerMessage = MatchMessage | AlchemyResultMessageIn;
+export type ClientToServerMessage =
+  | MatchMessage
+  | AlchemyResultMessageIn
+  | ItemTransferMessageIn;
 
 export type ServerToClientMessage =
   | JoinedMessage
   | PeerJoinedMessage
   | PeerLeftMessage
   | AlchemyResultMessageOut
+  | ItemTransferMessageOut
   | ErrorMessage;
 
 export function parseClientMessage(raw: string): ClientToServerMessage | null {
@@ -76,6 +95,13 @@ export function parseClientMessage(raw: string): ClientToServerMessage | null {
       const result = msg.result as Record<string, unknown> | undefined;
       if (result && typeof result.recipeId === "string" && typeof result.success === "boolean") {
         return { type: "alchemy-result", result: { recipeId: result.recipeId, success: result.success } };
+      }
+      return null;
+    }
+    case "item-transfer": {
+      const item = msg.item as Record<string, unknown> | undefined;
+      if (item && typeof item.itemId === "string") {
+        return { type: "item-transfer", item: { itemId: item.itemId } };
       }
       return null;
     }
