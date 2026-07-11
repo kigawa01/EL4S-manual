@@ -11,6 +11,13 @@ public enum MaterialType
 [RequireComponent(typeof(Collider2D))]
 public class MaterialBase : MonoBehaviour
 {
+    public bool Changed = false;
+
+    SpriteRenderer changedMaterial;
+
+    [Header("変化後のSprite")]
+    [SerializeField]
+    private Sprite changedSprite;
 
     [Header("最初に所属する素材置き場")]
     [SerializeField]
@@ -46,6 +53,8 @@ public class MaterialBase : MonoBehaviour
             Debug.LogError(
                 "MainCameraが見つかりません。CameraのTagをMainCameraにしてください。");
         }
+
+        changedMaterial = GetComponent<SpriteRenderer>();
     }
 
     private void Start()
@@ -201,5 +210,38 @@ public class MaterialBase : MonoBehaviour
 
         position.z = transform.position.z;
         transform.position = position;
+    }
+
+    public void ChangeMaterial()
+    {
+        if (changedMaterial == null)
+        {
+            Debug.LogWarning($"{gameObject.name}: SpriteRendererが見つかりません。");
+            return;
+        }
+
+        if (changedSprite == null)
+        {
+            Debug.LogWarning($"{gameObject.name}: 変化後のSpriteが設定されていません。");
+            return;
+        }
+
+        Changed = true;
+        changedMaterial.sprite = changedSprite;
+    }
+
+    public MaterialType MaterialType
+    {
+        get { return materialType; }
+    }
+
+    public bool IsChanged
+    {
+        get { return Changed; }
+    }
+
+    public void DestroyMaterial()
+    {
+        Destroy(gameObject);
     }
 }

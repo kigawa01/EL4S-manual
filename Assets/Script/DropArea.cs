@@ -19,7 +19,10 @@ public class DropArea : MonoBehaviour
 
     [Header("Ç∑Ç≈Ç…îzíuÇ≥ÇÍÇƒÇ¢ÇÈëfçﬁ")]
     [SerializeField]
-    private MaterialBase placedMaterial;
+    public MaterialBase placedMaterial;
+
+    [SerializeField]
+    private ActionType actionType;
 
     public bool CanPlaceMaterial()
     {
@@ -45,6 +48,7 @@ public class DropArea : MonoBehaviour
 
         placedMaterial = material;
         material.PlaceInDropArea(this, GetSnapPosition());
+        if(CheckMaterialType(material))material.ChangeMaterial();
 
         return true;
     }
@@ -55,5 +59,18 @@ public class DropArea : MonoBehaviour
         {
             placedMaterial = null;
         }
+    }
+
+    private bool CheckMaterialType(MaterialBase material)
+    {
+        if(actionType == ActionType.YAKU && material.MaterialType == MaterialType.KINOKO)
+        {
+            return true;
+        }
+        if (actionType == ActionType.SRITUBUSU && material.MaterialType == MaterialType.KUSA)
+        {
+            return true;
+        }
+        return false;
     }
 }
