@@ -59,7 +59,18 @@ public class ItemWarp : MonoBehaviour
             return;
         }
 
-        Instantiate(prefab, transform.position, Quaternion.identity);
+        var spawned = Instantiate(prefab, transform.position, Quaternion.identity);
+
+        // The spawned material lands right inside this kago's own trigger
+        // bounds (same position), so without this it immediately re-enters
+        // OnTriggerEnter2D below and gets sent straight back out before the
+        // player has a chance to pick it up.
+        var spawnedCollider = spawned.GetComponent<Collider2D>();
+        var myCollider = GetComponent<Collider2D>();
+        if (spawnedCollider != null && myCollider != null)
+        {
+            Physics2D.IgnoreCollision(spawnedCollider, myCollider, true);
+        }
     }
 
     private MaterialBase FindPrefab(MaterialType materialType)
