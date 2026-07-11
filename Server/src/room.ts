@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { WebSocket } from "ws";
 import type { ServerToClientMessage } from "./protocol.js";
 
@@ -15,8 +16,29 @@ export type JoinResult =
 export class RoomRegistry {
   private rooms = new Map<string, Map<string, Member>>();
   private memberOf = new Map<WebSocket, { roomId: string; clientId: string }>();
+  private waiting: Member | null = null;
 
-  join(roomId: string, clientId: string, ws: WebSocket): JoinResult {
+  // Pairs the caller with whoever is waiting into a freshly-generated room,
+  // or parks them as the waiting party until the next caller arrives. Reuses
+  // join()'s existing peer-joined broadcast to notify the waiting party once
+  // a match is made, so callers just send back whatever this returns. The
+  // `this.waiting.ws !== ws` check keeps a client that calls match() twice
+  // (e.g. a retry) from being paired with itself.
+  match(clientId: string, ws: WebSocket): JoinResult {
+    if (this.waiting && this.waiting.ws !== ws && this.waiting.ws.readyState === this.waiting.ws.OPEN) {
+      const partner = this.waiting;
+      this.waiting = null;
+
+      const roomId = `auto-${randomUUID()}`;
+      this.join(roomId, partner.clientId, partner.ws);
+      return this.join(roomId, clientId, ws);
+    }
+
+    this.waiting = { clientId, ws };
+    return { ok: true, peers: [] };
+  }
+
+  private join(roomId: string, clientId: string, ws: WebSocket): JoinResult {
     // A connection that was in a different room switches rooms cleanly
     // instead of leaving a ghost member behind in the old one.
     const prior = this.memberOf.get(ws);
@@ -53,6 +75,10 @@ export class RoomRegistry {
   }
 
   leave(ws: WebSocket): void {
+    if (this.waiting?.ws === ws) {
+      this.waiting = null;
+    }
+
     const info = this.memberOf.get(ws);
     if (!info) return;
 

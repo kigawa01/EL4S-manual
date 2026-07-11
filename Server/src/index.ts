@@ -33,8 +33,8 @@ wss.on("connection", (ws: WebSocket) => {
       return;
     }
 
-    if (message.type === "join") {
-      const result = rooms.join(message.roomId, message.clientId, ws);
+    if (message.type === "match") {
+      const result = rooms.match(message.clientId, ws);
       if (!result.ok) {
         send(ws, { type: "error", message: result.reason });
         return;
