@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EL4S.Realtime;
 using EL4S.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -44,7 +45,13 @@ namespace EL4S.EditorTools
             scaler.referenceResolution = new Vector2(1920, 1080);
 
             CreateTitleText(canvasGo.transform);
-            CreateStartButton(canvasGo.transform);
+            var roomCodeInput = CreateRoomCodeInput(canvasGo.transform);
+            var joinButton = CreateJoinButton(canvasGo.transform);
+            var statusText = CreateStatusText(canvasGo.transform);
+            var connection = EnsureRealtimeConnection();
+            var controller = EnsureTitleScreenController();
+
+            WireController(controller, connection, roomCodeInput, joinButton, statusText);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -82,17 +89,63 @@ namespace EL4S.EditorTools
             rect.anchoredPosition = Vector2.zero;
         }
 
-        private static void CreateStartButton(Transform parent)
+        private static InputField CreateRoomCodeInput(Transform parent)
         {
-            if (parent.Find("StartButton") != null) return;
+            var existing = parent.Find("RoomCodeInput");
+            if (existing != null) return existing.GetComponent<InputField>();
 
-            var go = new GameObject("StartButton", typeof(Image), typeof(Button), typeof(TitleScreenController));
+            var go = new GameObject("RoomCodeInput", typeof(Image), typeof(InputField));
+            go.transform.SetParent(parent, false);
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.45f);
+            rect.anchorMax = new Vector2(0.5f, 0.45f);
+            rect.sizeDelta = new Vector2(400, 60);
+            rect.anchoredPosition = Vector2.zero;
+
+            var image = go.GetComponent<Image>();
+            image.color = Color.white;
+
+            var placeholderGo = new GameObject("Placeholder", typeof(Text));
+            placeholderGo.transform.SetParent(go.transform, false);
+            var placeholderText = placeholderGo.GetComponent<Text>();
+            placeholderText.text = "合言葉を入力";
+            placeholderText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            placeholderText.fontSize = 24;
+            placeholderText.fontStyle = FontStyle.Italic;
+            placeholderText.alignment = TextAnchor.MiddleCenter;
+            placeholderText.color = new Color(0f, 0f, 0f, 0.5f);
+            StretchToParent(placeholderGo.GetComponent<RectTransform>());
+
+            var textGo = new GameObject("Text", typeof(Text));
+            textGo.transform.SetParent(go.transform, false);
+            var text = textGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 24;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.black;
+            StretchToParent(textGo.GetComponent<RectTransform>());
+
+            var inputField = go.GetComponent<InputField>();
+            inputField.targetGraphic = image;
+            inputField.textComponent = text;
+            inputField.placeholder = placeholderText;
+
+            return inputField;
+        }
+
+        private static Button CreateJoinButton(Transform parent)
+        {
+            var existing = parent.Find("JoinButton");
+            if (existing != null) return existing.GetComponent<Button>();
+
+            var go = new GameObject("JoinButton", typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
 
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, 0.3f);
             rect.anchorMax = new Vector2(0.5f, 0.3f);
-            rect.sizeDelta = new Vector2(320, 100);
+            rect.sizeDelta = new Vector2(240, 70);
             rect.anchoredPosition = Vector2.zero;
 
             var image = go.GetComponent<Image>();
@@ -102,20 +155,81 @@ namespace EL4S.EditorTools
             textGo.transform.SetParent(go.transform, false);
 
             var text = textGo.GetComponent<Text>();
-            text.text = "Start";
+            text.text = "参加";
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 48;
+            text.fontSize = 36;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.black;
+            StretchToParent(textGo.GetComponent<RectTransform>());
 
-            var textRect = textGo.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.sizeDelta = Vector2.zero;
-
-            var controller = go.GetComponent<TitleScreenController>();
             var button = go.GetComponent<Button>();
-            UnityEditor.Events.UnityEventTools.AddPersistentListener(button.onClick, controller.StartGame);
+            button.targetGraphic = image;
+
+            return button;
+        }
+
+        private static Text CreateStatusText(Transform parent)
+        {
+            var existing = parent.Find("StatusText");
+            if (existing != null) return existing.GetComponent<Text>();
+
+            var go = new GameObject("StatusText", typeof(Text));
+            go.transform.SetParent(parent, false);
+
+            var text = go.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 28;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.2f);
+            rect.anchorMax = new Vector2(0.5f, 0.2f);
+            rect.sizeDelta = new Vector2(600, 60);
+            rect.anchoredPosition = Vector2.zero;
+
+            return text;
+        }
+
+        private static RealtimeConnection EnsureRealtimeConnection()
+        {
+            var existing = Object.FindFirstObjectByType<RealtimeConnection>();
+            if (existing != null) return existing;
+
+            var go = new GameObject("RealtimeConnection", typeof(RealtimeConnection));
+            return go.GetComponent<RealtimeConnection>();
+        }
+
+        private static TitleScreenController EnsureTitleScreenController()
+        {
+            var existing = Object.FindFirstObjectByType<TitleScreenController>();
+            if (existing != null) return existing;
+
+            var go = new GameObject("TitleScreenController", typeof(TitleScreenController));
+            return go.GetComponent<TitleScreenController>();
+        }
+
+        private static void WireController(
+            TitleScreenController controller,
+            RealtimeConnection connection,
+            InputField roomCodeInput,
+            Button joinButton,
+            Text statusText)
+        {
+            var serialized = new SerializedObject(controller);
+            serialized.FindProperty("connection").objectReferenceValue = connection;
+            serialized.FindProperty("roomCodeInput").objectReferenceValue = roomCodeInput;
+            serialized.FindProperty("joinButton").objectReferenceValue = joinButton;
+            serialized.FindProperty("statusText").objectReferenceValue = statusText;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void StretchToParent(RectTransform rect)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.sizeDelta = Vector2.zero;
+            rect.anchoredPosition = Vector2.zero;
         }
 
         private static void AddTitleSceneToBuildSettings()
