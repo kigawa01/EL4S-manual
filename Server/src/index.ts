@@ -50,6 +50,15 @@ wss.on("connection", (ws: WebSocket) => {
         return;
       }
       rooms.broadcastState(ws, message.payload);
+      return;
+    }
+
+    if (message.type === "alchemy-result") {
+      if (!joined) {
+        send(ws, { type: "error", message: "not joined" });
+        return;
+      }
+      rooms.broadcastAlchemyResult(ws, message.result);
     }
   });
 
