@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace EL4S.Realtime
 {
@@ -6,5 +7,6 @@ namespace EL4S.Realtime
     public class ItemTransfer
     {
         public string itemId;
+        public Vector3 position;
     }
 }
