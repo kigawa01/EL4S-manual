@@ -49,14 +49,6 @@ namespace EL4S.UI
 
         private void OnJoined(string clientId, string[] existingPeers)
         {
-            if (existingPeers.Length >= 2)
-            {
-                statusText.text = "このルームは満員です";
-                joinButton.interactable = true;
-                connection.Disconnect();
-                return;
-            }
-
             var nextScene = existingPeers.Length == 0 ? firstPlayerScene : secondPlayerScene;
             statusText.text = existingPeers.Length == 0
                 ? "参加しました。相手を待っています..."
@@ -67,7 +59,9 @@ namespace EL4S.UI
         private void OnConnectionFailed(string message)
         {
             joinButton.interactable = true;
-            statusText.text = $"接続エラー: {message}";
+            statusText.text = message == "room is full"
+                ? "このルームは満員です"
+                : $"接続エラー: {message}";
         }
     }
 }

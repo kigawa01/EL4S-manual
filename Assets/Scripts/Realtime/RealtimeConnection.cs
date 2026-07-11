@@ -52,12 +52,14 @@ namespace EL4S.Realtime
             ClientId = Guid.NewGuid().ToString("N");
             _cts = new CancellationTokenSource();
             _socket = new ClientWebSocket();
+            var socket = _socket;
+            var token = _cts.Token;
 
             try
             {
-                await _socket.ConnectAsync(new Uri(serverUrl), _cts.Token);
+                await socket.ConnectAsync(new Uri(serverUrl), token);
                 await SendJson(new JoinMessage { type = "join", roomId = targetRoomId, clientId = ClientId });
-                _ = ReceiveLoop(_cts.Token);
+                _ = ReceiveLoop(socket, token);
             }
             catch (Exception e)
             {
@@ -66,19 +68,22 @@ namespace EL4S.Realtime
             }
         }
 
-        private async Task ReceiveLoop(CancellationToken token)
+        // Takes the socket/token as parameters (rather than reading the _socket/_cts
+        // fields) so a loop started by an earlier Connect() keeps watching its own
+        // connection even after a later Connect() call replaces those fields.
+        private async Task ReceiveLoop(ClientWebSocket socket, CancellationToken token)
         {
             var buffer = new byte[8192];
             var messageBuilder = new StringBuilder();
 
             try
             {
-                while (_socket.State == WebSocketState.Open && !token.IsCancellationRequested)
+                while (socket.State == WebSocketState.Open && !token.IsCancellationRequested)
                 {
-                    var result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", token);
+                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", token);
                         break;
                     }
 
@@ -110,29 +115,24 @@ namespace EL4S.Realtime
 
         private void Dispatch(string json)
         {
-            var type = JsonUtility.FromJson<TypeOnly>(json)?.type;
-            switch (type)
+            var msg = JsonUtility.FromJson<IncomingMessage>(json);
+            switch (msg?.type)
             {
                 case "joined":
-                    var joined = JsonUtility.FromJson<JoinedMessage>(json);
-                    Joined?.Invoke(joined.clientId, joined.peers ?? Array.Empty<string>());
+                    Joined?.Invoke(msg.clientId, msg.peers ?? Array.Empty<string>());
                     break;
                 case "peer-joined":
-                    var peerJoined = JsonUtility.FromJson<PeerJoinedMessage>(json);
-                    PeerJoined?.Invoke(peerJoined.clientId);
+                    PeerJoined?.Invoke(msg.clientId);
                     break;
                 case "peer-left":
-                    var peerLeft = JsonUtility.FromJson<PeerLeftMessage>(json);
-                    PeerLeft?.Invoke(peerLeft.clientId);
+                    PeerLeft?.Invoke(msg.clientId);
                     break;
                 case "state":
-                    var state = JsonUtility.FromJson<StateOutMessage>(json);
-                    PeerStateReceived?.Invoke(state.clientId, state.payload);
+                    PeerStateReceived?.Invoke(msg.clientId, msg.payload);
                     break;
                 case "error":
-                    var error = JsonUtility.FromJson<ErrorMessage>(json);
-                    Debug.LogWarning($"[RealtimeConnection] server error: {error.message}");
-                    ConnectionFailed?.Invoke(error.message);
+                    Debug.LogWarning($"[RealtimeConnection] server error: {msg.message}");
+                    ConnectionFailed?.Invoke(msg.message);
                     break;
                 default:
                     Debug.LogWarning($"[RealtimeConnection] unknown message: {json}");
@@ -150,7 +150,19 @@ namespace EL4S.Realtime
             _cts?.Cancel();
             if (_socket != null && _socket.State == WebSocketState.Open)
             {
-                _ = _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnect", CancellationToken.None);
+                _ = CloseQuietly(_socket);
+            }
+        }
+
+        private static async Task CloseQuietly(ClientWebSocket socket)
+        {
+            try
+            {
+                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnect", CancellationToken.None);
+            }
+            catch
+            {
+                // socket already gone, nothing to clean up
             }
         }
 
@@ -190,13 +202,19 @@ namespace EL4S.Realtime
             _socket?.Dispose();
         }
 
-        [Serializable] private class TypeOnly { public string type; }
         [Serializable] private class JoinMessage { public string type; public string roomId; public string clientId; }
-        [Serializable] private class JoinedMessage { public string type; public string clientId; public string[] peers; }
-        [Serializable] private class PeerJoinedMessage { public string type; public string clientId; }
-        [Serializable] private class PeerLeftMessage { public string type; public string clientId; }
         [Serializable] private class StateInMessage { public string type; public PeerState payload; }
-        [Serializable] private class StateOutMessage { public string type; public string clientId; public PeerState payload; }
-        [Serializable] private class ErrorMessage { public string type; public string message; }
+
+        // Covers every server->client shape (joined/peer-joined/peer-left/state/error) in one
+        // parse; JsonUtility leaves fields absent from the JSON at their default value.
+        [Serializable]
+        private class IncomingMessage
+        {
+            public string type;
+            public string clientId;
+            public string[] peers;
+            public PeerState payload;
+            public string message;
+        }
     }
 }

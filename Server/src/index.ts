@@ -1,11 +1,15 @@
 import { createServer } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import { parseClientMessage } from "./protocol.js";
+import { parseClientMessage, type ServerToClientMessage } from "./protocol.js";
 import { RoomRegistry } from "./room.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 
 const rooms = new RoomRegistry();
+
+function send(ws: WebSocket, message: ServerToClientMessage): void {
+  ws.send(JSON.stringify(message));
+}
 
 const httpServer = createServer((req, res) => {
   if (req.method === "GET" && req.url === "/health") {
@@ -25,22 +29,24 @@ wss.on("connection", (ws: WebSocket) => {
   ws.on("message", (raw) => {
     const message = parseClientMessage(raw.toString());
     if (!message) {
-      ws.send(JSON.stringify({ type: "error", message: "invalid message" }));
+      send(ws, { type: "error", message: "invalid message" });
       return;
     }
 
     if (message.type === "join") {
-      const peers = rooms.join(message.roomId, message.clientId, ws);
+      const result = rooms.join(message.roomId, message.clientId, ws);
+      if (!result.ok) {
+        send(ws, { type: "error", message: result.reason });
+        return;
+      }
       joined = true;
-      ws.send(
-        JSON.stringify({ type: "joined", clientId: message.clientId, peers }),
-      );
+      send(ws, { type: "joined", clientId: message.clientId, peers: result.peers });
       return;
     }
 
     if (message.type === "state") {
       if (!joined) {
-        ws.send(JSON.stringify({ type: "error", message: "not joined" }));
+        send(ws, { type: "error", message: "not joined" });
         return;
       }
       rooms.broadcastState(ws, message.payload);

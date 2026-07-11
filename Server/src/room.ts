@@ -1,16 +1,29 @@
 import type { WebSocket } from "ws";
 import type { ServerToClientMessage } from "./protocol.js";
 
+const ROOM_CAPACITY = 2;
+
 interface Member {
   clientId: string;
   ws: WebSocket;
 }
 
+export type JoinResult =
+  | { ok: true; peers: string[] }
+  | { ok: false; reason: string };
+
 export class RoomRegistry {
   private rooms = new Map<string, Map<string, Member>>();
   private memberOf = new Map<WebSocket, { roomId: string; clientId: string }>();
 
-  join(roomId: string, clientId: string, ws: WebSocket): string[] {
+  join(roomId: string, clientId: string, ws: WebSocket): JoinResult {
+    // A connection that was in a different room switches rooms cleanly
+    // instead of leaving a ghost member behind in the old one.
+    const prior = this.memberOf.get(ws);
+    if (prior && prior.roomId !== roomId) {
+      this.leave(ws);
+    }
+
     let room = this.rooms.get(roomId);
     if (!room) {
       room = new Map();
@@ -21,6 +34,12 @@ export class RoomRegistry {
     if (existing && existing.ws !== ws) {
       existing.ws.close(4000, "replaced by new connection");
       this.memberOf.delete(existing.ws);
+      room.delete(clientId);
+      this.broadcast(roomId, clientId, { type: "peer-left", clientId });
+    }
+
+    if (!room.has(clientId) && room.size >= ROOM_CAPACITY) {
+      return { ok: false, reason: "room is full" };
     }
 
     const peers = [...room.keys()].filter((id) => id !== clientId);
@@ -30,7 +49,7 @@ export class RoomRegistry {
 
     this.broadcast(roomId, clientId, { type: "peer-joined", clientId });
 
-    return peers;
+    return { ok: true, peers };
   }
 
   leave(ws: WebSocket): void {
