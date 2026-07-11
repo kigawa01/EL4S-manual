@@ -26,24 +26,25 @@ public class ItemWarp : MonoBehaviour
         }
     }
 
+    // itemTransfer no longer carries a position: the sender's kago and this
+    // kago live in separate scenes with unrelated coordinates (e.g. Player1's
+    // kago sits at roughly x=-7.7, Player2's at x=7.8), so applying the
+    // sender's raw position here used to snap this kago to the wrong spot
+    // every time an item arrived.
     private void ReceiveItemTransfer(string fromClientId, ItemTransfer itemTransfer)
     {
-        if (this.gameObject == null) return;
-
-        this.gameObject.transform.position = itemTransfer.position;
+        Debug.Log($"[ItemWarp] received {itemTransfer.itemId} from {fromClientId}");
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other == null) return;
 
-        Debug.Log("Hit");
-
         if (other.CompareTag("Item") && connection != null)
         {
             connection.SendItemTransfer(new ItemTransfer
             {
-                position = other.gameObject.transform.position
+                itemId = other.gameObject.name
             });
 
             Destroy(other.gameObject);
