@@ -13,6 +13,7 @@ jobs:
     with:
       name: el4s-realtime
       harborProject: private
+      harborUser: robot$el4s-manual
       manifestFile: el4s-realtime/deployment.yaml
       repository: kigawa-net/kigawa-net-k8s
       dockerFile: ./Server/Dockerfile
