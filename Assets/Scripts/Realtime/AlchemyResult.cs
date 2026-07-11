@@ -1,4 +1,5 @@
 using System;
+using 
 
 namespace EL4S.Realtime
 {
@@ -7,5 +8,7 @@ namespace EL4S.Realtime
     {
         public string recipeId;
         public bool success;
+        public bool result;
+        public CheckType checkType;
     }
 }
