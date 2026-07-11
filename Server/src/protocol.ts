@@ -1,9 +1,8 @@
 // WebSocket message protocol shared conceptually with the Unity client
 // (Assets/Scripts/Realtime/RealtimeConnection.cs mirrors these shapes as JSON).
 
-export interface JoinMessage {
-  type: "join";
-  roomId: string;
+export interface MatchMessage {
+  type: "match";
   clientId: string;
 }
 
@@ -39,7 +38,7 @@ export interface ErrorMessage {
   message: string;
 }
 
-export type ClientToServerMessage = JoinMessage | StateMessageIn;
+export type ClientToServerMessage = MatchMessage | StateMessageIn;
 
 export type ServerToClientMessage =
   | JoinedMessage
@@ -63,9 +62,9 @@ export function parseClientMessage(raw: string): ClientToServerMessage | null {
   const msg = data as Record<string, unknown>;
 
   switch (msg.type) {
-    case "join":
-      if (typeof msg.roomId === "string" && typeof msg.clientId === "string") {
-        return { type: "join", roomId: msg.roomId, clientId: msg.clientId };
+    case "match":
+      if (typeof msg.clientId === "string") {
+        return { type: "match", clientId: msg.clientId };
       }
       return null;
     case "state":
