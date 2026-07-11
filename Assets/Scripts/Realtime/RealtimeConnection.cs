@@ -12,7 +12,7 @@ namespace EL4S.Realtime
     // Server/src/protocol.ts: join / joined / peer-joined / peer-left / state / error.
     public class RealtimeConnection : MonoBehaviour
     {
-        [SerializeField] private string serverUrl = "ws://localhost:8080/ws";
+        [SerializeField] private string serverUrl = "wss://el4s-realtime.kigawa.net/ws";
         [SerializeField] private string roomId = "default";
 
         public event Action<string, string[]> Joined;
