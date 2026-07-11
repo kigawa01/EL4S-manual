@@ -43,7 +43,7 @@ public class ItemWarp : MonoBehaviour
         {
             connection.SendItemTransfer(new ItemTransfer
             {
-                position = this.gameObject.transform.position
+                position = other.gameObject.transform.position
             });
 
             Destroy(other.gameObject);
