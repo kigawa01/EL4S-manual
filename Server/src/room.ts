@@ -80,17 +80,6 @@ export class RoomRegistry {
     }
   }
 
-  broadcastState(ws: WebSocket, payload: unknown): void {
-    const info = this.memberOf.get(ws);
-    if (!info) return;
-
-    this.broadcast(info.roomId, info.clientId, {
-      type: "state",
-      clientId: info.clientId,
-      payload,
-    });
-  }
-
   private broadcast(roomId: string, excludeClientId: string, message: ServerToClientMessage): void {
     const room = this.rooms.get(roomId);
     if (!room) return;

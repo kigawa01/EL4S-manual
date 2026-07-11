@@ -22,29 +22,17 @@ export interface PeerLeftMessage {
   clientId: string;
 }
 
-export interface StateMessageIn {
-  type: "state";
-  payload: unknown;
-}
-
-export interface StateMessageOut {
-  type: "state";
-  clientId: string;
-  payload: unknown;
-}
-
 export interface ErrorMessage {
   type: "error";
   message: string;
 }
 
-export type ClientToServerMessage = MatchMessage | StateMessageIn;
+export type ClientToServerMessage = MatchMessage;
 
 export type ServerToClientMessage =
   | JoinedMessage
   | PeerJoinedMessage
   | PeerLeftMessage
-  | StateMessageOut
   | ErrorMessage;
 
 export function parseClientMessage(raw: string): ClientToServerMessage | null {
@@ -65,11 +53,6 @@ export function parseClientMessage(raw: string): ClientToServerMessage | null {
     case "match":
       if (typeof msg.clientId === "string") {
         return { type: "match", clientId: msg.clientId };
-      }
-      return null;
-    case "state":
-      if ("payload" in msg) {
-        return { type: "state", payload: msg.payload };
       }
       return null;
     default:

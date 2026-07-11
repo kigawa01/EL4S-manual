@@ -9,7 +9,7 @@ using UnityEngine;
 namespace EL4S.Realtime
 {
     // Talks to the el4s-realtime WebSocket relay (Server/). Protocol mirrors
-    // Server/src/protocol.ts: match / joined / peer-joined / peer-left / state / error.
+    // Server/src/protocol.ts: match / joined / peer-joined / peer-left / error.
     public class RealtimeConnection : MonoBehaviour
     {
         [SerializeField] private string serverUrl = "wss://el4s-realtime.kigawa.net/ws";
@@ -17,7 +17,6 @@ namespace EL4S.Realtime
         public event Action<string, string[]> Joined;
         public event Action<string> PeerJoined;
         public event Action<string> PeerLeft;
-        public event Action<string, PeerState> PeerStateReceived;
         public event Action<string> ConnectionFailed;
 
         public string ClientId { get; private set; }
@@ -125,10 +124,6 @@ namespace EL4S.Realtime
                     var peerLeft = JsonUtility.FromJson<PeerLeftMessage>(json);
                     PeerLeft?.Invoke(peerLeft.clientId);
                     break;
-                case "state":
-                    var state = JsonUtility.FromJson<StateOutMessage>(json);
-                    PeerStateReceived?.Invoke(state.clientId, state.payload);
-                    break;
                 case "error":
                     var error = JsonUtility.FromJson<ErrorMessage>(json);
                     Debug.LogWarning($"[RealtimeConnection] server error: {error.message}");
@@ -138,11 +133,6 @@ namespace EL4S.Realtime
                     Debug.LogWarning($"[RealtimeConnection] unknown message: {json}");
                     break;
             }
-        }
-
-        public void SendState(PeerState state)
-        {
-            _ = SendJson(new StateInMessage { type = "state", payload = state });
         }
 
         public void Disconnect()
@@ -195,8 +185,6 @@ namespace EL4S.Realtime
         [Serializable] private class JoinedMessage { public string type; public string clientId; public string[] peers; }
         [Serializable] private class PeerJoinedMessage { public string type; public string clientId; }
         [Serializable] private class PeerLeftMessage { public string type; public string clientId; }
-        [Serializable] private class StateInMessage { public string type; public PeerState payload; }
-        [Serializable] private class StateOutMessage { public string type; public string clientId; public PeerState payload; }
         [Serializable] private class ErrorMessage { public string type; public string message; }
     }
 }

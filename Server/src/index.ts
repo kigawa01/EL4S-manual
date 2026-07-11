@@ -20,8 +20,6 @@ const httpServer = createServer((req, res) => {
 const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
 wss.on("connection", (ws: WebSocket) => {
-  let joined = false;
-
   ws.on("message", (raw) => {
     const message = parseClientMessage(raw.toString());
     if (!message) {
@@ -31,19 +29,9 @@ wss.on("connection", (ws: WebSocket) => {
 
     if (message.type === "match") {
       const peers = rooms.match(message.clientId, ws);
-      joined = true;
       ws.send(
         JSON.stringify({ type: "joined", clientId: message.clientId, peers }),
       );
-      return;
-    }
-
-    if (message.type === "state") {
-      if (!joined) {
-        ws.send(JSON.stringify({ type: "error", message: "not joined" }));
-        return;
-      }
-      rooms.broadcastState(ws, message.payload);
     }
   });
 
