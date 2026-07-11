@@ -13,12 +13,12 @@ namespace EL4S.Realtime
     public class RealtimeConnection : MonoBehaviour
     {
         [SerializeField] private string serverUrl = "ws://localhost:8080/ws";
-        [SerializeField] private string roomId = "default";
 
         public event Action<string, string[]> Joined;
         public event Action<string> PeerJoined;
         public event Action<string> PeerLeft;
         public event Action<string, PeerState> PeerStateReceived;
+        public event Action<string> ConnectionFailed;
 
         public string ClientId { get; private set; }
         public bool IsConnected => _socket != null && _socket.State == WebSocketState.Open;
@@ -28,7 +28,21 @@ namespace EL4S.Realtime
         private readonly ConcurrentQueue<string> _incoming = new ConcurrentQueue<string>();
         private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
 
-        private async void Start()
+        private static RealtimeConnection _instance;
+
+        private void Awake()
+        {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+
+        public async void Connect(string targetRoomId)
         {
             ClientId = Guid.NewGuid().ToString("N");
             _cts = new CancellationTokenSource();
@@ -37,12 +51,13 @@ namespace EL4S.Realtime
             try
             {
                 await _socket.ConnectAsync(new Uri(serverUrl), _cts.Token);
-                await SendJson(new JoinMessage { type = "join", roomId = roomId, clientId = ClientId });
+                await SendJson(new JoinMessage { type = "join", roomId = targetRoomId, clientId = ClientId });
                 _ = ReceiveLoop(_cts.Token);
             }
             catch (Exception e)
             {
                 Debug.LogError($"[RealtimeConnection] connect failed: {e}");
+                ConnectionFailed?.Invoke(e.Message);
             }
         }
 
@@ -112,6 +127,7 @@ namespace EL4S.Realtime
                 case "error":
                     var error = JsonUtility.FromJson<ErrorMessage>(json);
                     Debug.LogWarning($"[RealtimeConnection] server error: {error.message}");
+                    ConnectionFailed?.Invoke(error.message);
                     break;
                 default:
                     Debug.LogWarning($"[RealtimeConnection] unknown message: {json}");
