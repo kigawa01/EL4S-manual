@@ -38,16 +38,16 @@ CLI ビルドスクリプトはリポジトリに含まれていません。Unit
 
 - `index.ts` — `http.createServer` で `/health` エンドポイントを提供しつつ、同じ HTTP サーバーに
   `path: "/ws"` で `ws.WebSocketServer` を重ねている。受信メッセージを `parseClientMessage` で検証し、
-  `join` / `state` を `RoomRegistry` に委譲するだけの薄いハンドラ。
+  `match` を `RoomRegistry` に委譲するだけの薄いハンドラ。
 - `protocol.ts` — クライアント⇔サーバーのメッセージ型定義と `parseClientMessage` によるランタイム検証。
-  サーバー→クライアントは `joined` / `peer-joined` / `peer-left` / `state` / `error` の5種類。
+  サーバー→クライアントは `joined` / `peer-joined` / `peer-left` / `alchemy-result` / `error` の5種類。
   ファイル冒頭のコメントに Unity 側で `Assets/Scripts/Realtime/RealtimeConnection.cs` としてこの型を
   ミラーする想定が書かれているが、**現状そのファイルは未実装**。
 - `room.ts` — `RoomRegistry` が状態のすべて。`Map<roomId, Map<clientId, Member>>` と
   `WebSocket -> {roomId, clientId}` の逆引き Map をメモリ上に保持するのみで、永続化なし・単一プロセス前提。
   - `join()`: 同じ `clientId` で既存接続があれば古い方を close code `4000` で切断してから差し替える
     （再接続の横取り）。戻り値は自分以外の既存 peer 一覧。
-  - `broadcastState()` / `broadcast()`: room 内の自分以外全員に fan-out。送信者を除外するのは呼び出し側で
+  - `broadcast()`: room 内の自分以外全員に fan-out。送信者を除外するのは呼び出し側で
     `excludeClientId` を渡す設計。
   - room が空になったら自動的に `rooms` から削除される。
 
