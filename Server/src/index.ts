@@ -29,8 +29,8 @@ wss.on("connection", (ws: WebSocket) => {
       return;
     }
 
-    if (message.type === "join") {
-      const peers = rooms.join(message.roomId, message.clientId, ws);
+    if (message.type === "match") {
+      const peers = rooms.match(message.clientId, ws);
       joined = true;
       ws.send(
         JSON.stringify({ type: "joined", clientId: message.clientId, peers }),

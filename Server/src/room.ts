@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { WebSocket } from "ws";
 import type { ServerToClientMessage } from "./protocol.js";
 
@@ -9,8 +10,27 @@ interface Member {
 export class RoomRegistry {
   private rooms = new Map<string, Map<string, Member>>();
   private memberOf = new Map<WebSocket, { roomId: string; clientId: string }>();
+  private waiting: Member | null = null;
 
-  join(roomId: string, clientId: string, ws: WebSocket): string[] {
+  // Pairs the caller with whoever is waiting into a freshly-generated room,
+  // or parks them as the waiting party until the next caller arrives. Reuses
+  // join()'s existing peer-joined broadcast to notify the waiting party once
+  // a match is made, so callers just send back whatever peers this returns.
+  match(clientId: string, ws: WebSocket): string[] {
+    if (this.waiting && this.waiting.ws.readyState === this.waiting.ws.OPEN) {
+      const partner = this.waiting;
+      this.waiting = null;
+
+      const roomId = `auto-${randomUUID()}`;
+      this.join(roomId, partner.clientId, partner.ws);
+      return this.join(roomId, clientId, ws);
+    }
+
+    this.waiting = { clientId, ws };
+    return [];
+  }
+
+  private join(roomId: string, clientId: string, ws: WebSocket): string[] {
     let room = this.rooms.get(roomId);
     if (!room) {
       room = new Map();
@@ -34,6 +54,10 @@ export class RoomRegistry {
   }
 
   leave(ws: WebSocket): void {
+    if (this.waiting?.ws === ws) {
+      this.waiting = null;
+    }
+
     const info = this.memberOf.get(ws);
     if (!info) return;
 

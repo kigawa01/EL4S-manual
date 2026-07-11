@@ -8,8 +8,7 @@ namespace EL4S.UI
     public class TitleScreenController : MonoBehaviour
     {
         [SerializeField] private RealtimeConnection connection;
-        [SerializeField] private InputField roomCodeInput;
-        [SerializeField] private Button joinButton;
+        [SerializeField] private Button matchButton;
         [SerializeField] private Text statusText;
         [SerializeField] private string firstPlayerScene = "Player1";
         [SerializeField] private string secondPlayerScene = "Player2";
@@ -21,52 +20,48 @@ namespace EL4S.UI
                 connection = RealtimeConnection.Instance;
             }
 
-            joinButton.onClick.AddListener(OnJoinClicked);
+            matchButton.onClick.AddListener(OnMatchClicked);
             connection.Joined += OnJoined;
+            connection.PeerJoined += OnPeerJoined;
             connection.ConnectionFailed += OnConnectionFailed;
         }
 
         private void OnDestroy()
         {
-            joinButton.onClick.RemoveListener(OnJoinClicked);
+            matchButton.onClick.RemoveListener(OnMatchClicked);
             connection.Joined -= OnJoined;
+            connection.PeerJoined -= OnPeerJoined;
             connection.ConnectionFailed -= OnConnectionFailed;
         }
 
-        private void OnJoinClicked()
+        private void OnMatchClicked()
         {
-            var roomCode = roomCodeInput.text.Trim();
-            if (string.IsNullOrEmpty(roomCode))
-            {
-                statusText.text = "合言葉を入力してください";
-                return;
-            }
-
-            joinButton.interactable = false;
-            statusText.text = "接続中...";
-            connection.Connect(roomCode);
+            matchButton.interactable = false;
+            statusText.text = "対戦相手を探しています...";
+            connection.AutoMatch();
         }
 
         private void OnJoined(string clientId, string[] existingPeers)
         {
-            if (existingPeers.Length >= 2)
+            if (existingPeers.Length == 0)
             {
-                statusText.text = "このルームは満員です";
-                joinButton.interactable = true;
-                connection.Disconnect();
+                statusText.text = "対戦相手を探しています...";
                 return;
             }
 
-            var nextScene = existingPeers.Length == 0 ? firstPlayerScene : secondPlayerScene;
-            statusText.text = existingPeers.Length == 0
-                ? "参加しました。相手を待っています..."
-                : "相手が見つかりました";
-            SceneManager.LoadScene(nextScene);
+            statusText.text = "相手が見つかりました";
+            SceneManager.LoadScene(secondPlayerScene);
+        }
+
+        private void OnPeerJoined(string peerId)
+        {
+            statusText.text = "相手が見つかりました";
+            SceneManager.LoadScene(firstPlayerScene);
         }
 
         private void OnConnectionFailed(string message)
         {
-            joinButton.interactable = true;
+            matchButton.interactable = true;
             statusText.text = $"接続エラー: {message}";
         }
     }

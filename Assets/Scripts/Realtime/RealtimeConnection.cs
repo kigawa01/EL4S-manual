@@ -9,7 +9,7 @@ using UnityEngine;
 namespace EL4S.Realtime
 {
     // Talks to the el4s-realtime WebSocket relay (Server/). Protocol mirrors
-    // Server/src/protocol.ts: join / joined / peer-joined / peer-left / state / error.
+    // Server/src/protocol.ts: match / joined / peer-joined / peer-left / state / error.
     public class RealtimeConnection : MonoBehaviour
     {
         [SerializeField] private string serverUrl = "wss://el4s-realtime.kigawa.net/ws";
@@ -43,7 +43,7 @@ namespace EL4S.Realtime
             DontDestroyOnLoad(gameObject);
         }
 
-        public async void Connect(string targetRoomId)
+        public async void AutoMatch()
         {
             _cts?.Cancel();
             _cts?.Dispose();
@@ -56,7 +56,7 @@ namespace EL4S.Realtime
             try
             {
                 await _socket.ConnectAsync(new Uri(serverUrl), _cts.Token);
-                await SendJson(new JoinMessage { type = "join", roomId = targetRoomId, clientId = ClientId });
+                await SendJson(new MatchMessage { type = "match", clientId = ClientId });
                 _ = ReceiveLoop(_cts.Token);
             }
             catch (Exception e)
@@ -191,7 +191,7 @@ namespace EL4S.Realtime
         }
 
         [Serializable] private class TypeOnly { public string type; }
-        [Serializable] private class JoinMessage { public string type; public string roomId; public string clientId; }
+        [Serializable] private class MatchMessage { public string type; public string clientId; }
         [Serializable] private class JoinedMessage { public string type; public string clientId; public string[] peers; }
         [Serializable] private class PeerJoinedMessage { public string type; public string clientId; }
         [Serializable] private class PeerLeftMessage { public string type; public string clientId; }
