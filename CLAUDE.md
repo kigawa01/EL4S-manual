@@ -40,7 +40,7 @@ CLI ビルドスクリプトはリポジトリに含まれていません。Unit
   `path: "/ws"` で `ws.WebSocketServer` を重ねている。受信メッセージを `parseClientMessage` で検証し、
   `match` を `RoomRegistry` に委譲するだけの薄いハンドラ。
 - `protocol.ts` — クライアント⇔サーバーのメッセージ型定義と `parseClientMessage` によるランタイム検証。
-  サーバー→クライアントは `joined` / `peer-joined` / `peer-left` / `alchemy-result` / `error` の5種類。
+  サーバー→クライアントは `joined` / `peer-joined` / `peer-left` / `alchemy-result` / `item-transfer` / `error` の6種類。
   ファイル冒頭のコメントに Unity 側で `Assets/Scripts/Realtime/RealtimeConnection.cs` としてこの型を
   ミラーする想定が書かれているが、**現状そのファイルは未実装**。
 - `room.ts` — `RoomRegistry` が状態のすべて。`Map<roomId, Map<clientId, Member>>` と
