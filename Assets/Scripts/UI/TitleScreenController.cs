@@ -37,7 +37,7 @@ namespace EL4S.UI
         private void OnMatchClicked()
         {
             matchButton.interactable = false;
-            statusText.text = "対戦相手を探しています...";
+            statusText.text = "マッチング相手を探しています...";
             connection.AutoMatch();
         }
 
@@ -45,7 +45,7 @@ namespace EL4S.UI
         {
             if (existingPeers.Length == 0)
             {
-                statusText.text = "対戦相手を探しています...";
+                statusText.text = "マッチング相手を探しています...";
                 return;
             }
 

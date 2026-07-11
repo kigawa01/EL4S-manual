@@ -101,10 +101,6 @@ export class RoomRegistry {
     }
   }
 
-  broadcastState(ws: WebSocket, payload: unknown): void {
-    this.broadcastFromSender(ws, (clientId) => ({ type: "state", clientId, payload }));
-  }
-
   broadcastAlchemyResult(ws: WebSocket, result: AlchemyResultPayload): void {
     this.broadcastFromSender(ws, (clientId) => ({ type: "alchemy-result", clientId, result }));
   }

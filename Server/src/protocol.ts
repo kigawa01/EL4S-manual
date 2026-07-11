@@ -22,17 +22,6 @@ export interface PeerLeftMessage {
   clientId: string;
 }
 
-export interface StateMessageIn {
-  type: "state";
-  payload: unknown;
-}
-
-export interface StateMessageOut {
-  type: "state";
-  clientId: string;
-  payload: unknown;
-}
-
 export interface AlchemyResultPayload {
   recipeId: string;
   success: boolean;
@@ -54,13 +43,12 @@ export interface ErrorMessage {
   message: string;
 }
 
-export type ClientToServerMessage = MatchMessage | StateMessageIn | AlchemyResultMessageIn;
+export type ClientToServerMessage = MatchMessage | AlchemyResultMessageIn;
 
 export type ServerToClientMessage =
   | JoinedMessage
   | PeerJoinedMessage
   | PeerLeftMessage
-  | StateMessageOut
   | AlchemyResultMessageOut
   | ErrorMessage;
 
@@ -82,11 +70,6 @@ export function parseClientMessage(raw: string): ClientToServerMessage | null {
     case "match":
       if (typeof msg.clientId === "string") {
         return { type: "match", clientId: msg.clientId };
-      }
-      return null;
-    case "state":
-      if ("payload" in msg) {
-        return { type: "state", payload: msg.payload };
       }
       return null;
     case "alchemy-result": {
