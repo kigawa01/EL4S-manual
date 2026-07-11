@@ -29,6 +29,7 @@ namespace EL4S.Realtime
         private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
 
         private static RealtimeConnection _instance;
+        public static RealtimeConnection Instance => _instance;
 
         private void Awake()
         {
@@ -44,6 +45,10 @@ namespace EL4S.Realtime
 
         public async void Connect(string targetRoomId)
         {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _socket?.Dispose();
+
             ClientId = Guid.NewGuid().ToString("N");
             _cts = new CancellationTokenSource();
             _socket = new ClientWebSocket();
@@ -138,6 +143,15 @@ namespace EL4S.Realtime
         public void SendState(PeerState state)
         {
             _ = SendJson(new StateInMessage { type = "state", payload = state });
+        }
+
+        public void Disconnect()
+        {
+            _cts?.Cancel();
+            if (_socket != null && _socket.State == WebSocketState.Open)
+            {
+                _ = _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client disconnect", CancellationToken.None);
+            }
         }
 
         private async Task SendJson(object message)

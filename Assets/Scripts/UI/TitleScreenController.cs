@@ -16,6 +16,11 @@ namespace EL4S.UI
 
         private void Awake()
         {
+            if (RealtimeConnection.Instance != null)
+            {
+                connection = RealtimeConnection.Instance;
+            }
+
             joinButton.onClick.AddListener(OnJoinClicked);
             connection.Joined += OnJoined;
             connection.ConnectionFailed += OnConnectionFailed;
@@ -44,6 +49,14 @@ namespace EL4S.UI
 
         private void OnJoined(string clientId, string[] existingPeers)
         {
+            if (existingPeers.Length >= 2)
+            {
+                statusText.text = "このルームは満員です";
+                joinButton.interactable = true;
+                connection.Disconnect();
+                return;
+            }
+
             var nextScene = existingPeers.Length == 0 ? firstPlayerScene : secondPlayerScene;
             statusText.text = existingPeers.Length == 0
                 ? "参加しました。相手を待っています..."
