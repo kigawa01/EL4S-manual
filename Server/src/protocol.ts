@@ -33,18 +33,35 @@ export interface StateMessageOut {
   payload: unknown;
 }
 
+export interface AlchemyResultPayload {
+  recipeId: string;
+  success: boolean;
+}
+
+export interface AlchemyResultMessageIn {
+  type: "alchemy-result";
+  result: AlchemyResultPayload;
+}
+
+export interface AlchemyResultMessageOut {
+  type: "alchemy-result";
+  clientId: string;
+  result: AlchemyResultPayload;
+}
+
 export interface ErrorMessage {
   type: "error";
   message: string;
 }
 
-export type ClientToServerMessage = MatchMessage | StateMessageIn;
+export type ClientToServerMessage = MatchMessage | StateMessageIn | AlchemyResultMessageIn;
 
 export type ServerToClientMessage =
   | JoinedMessage
   | PeerJoinedMessage
   | PeerLeftMessage
   | StateMessageOut
+  | AlchemyResultMessageOut
   | ErrorMessage;
 
 export function parseClientMessage(raw: string): ClientToServerMessage | null {
@@ -72,6 +89,13 @@ export function parseClientMessage(raw: string): ClientToServerMessage | null {
         return { type: "state", payload: msg.payload };
       }
       return null;
+    case "alchemy-result": {
+      const result = msg.result as Record<string, unknown> | undefined;
+      if (result && typeof result.recipeId === "string" && typeof result.success === "boolean") {
+        return { type: "alchemy-result", result: { recipeId: result.recipeId, success: result.success } };
+      }
+      return null;
+    }
     default:
       return null;
   }

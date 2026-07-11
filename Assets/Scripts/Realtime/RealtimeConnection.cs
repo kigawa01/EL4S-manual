@@ -9,7 +9,8 @@ using UnityEngine;
 namespace EL4S.Realtime
 {
     // Talks to the el4s-realtime WebSocket relay (Server/). Protocol mirrors
-    // Server/src/protocol.ts: match / joined / peer-joined / peer-left / state / error.
+    // Server/src/protocol.ts: match / joined / peer-joined / peer-left / state /
+    // alchemy-result / error.
     public class RealtimeConnection : MonoBehaviour
     {
         [SerializeField] private string serverUrl = "wss://el4s-realtime.kigawa.net/ws";
@@ -18,6 +19,7 @@ namespace EL4S.Realtime
         public event Action<string> PeerJoined;
         public event Action<string> PeerLeft;
         public event Action<string, PeerState> PeerStateReceived;
+        public event Action<string, AlchemyResult> AlchemyResultReceived;
         public event Action<string> ConnectionFailed;
 
         public string ClientId { get; private set; }
@@ -130,6 +132,9 @@ namespace EL4S.Realtime
                 case "state":
                     PeerStateReceived?.Invoke(msg.clientId, msg.payload);
                     break;
+                case "alchemy-result":
+                    AlchemyResultReceived?.Invoke(msg.clientId, msg.result);
+                    break;
                 case "error":
                     Debug.LogWarning($"[RealtimeConnection] server error: {msg.message}");
                     ConnectionFailed?.Invoke(msg.message);
@@ -143,6 +148,11 @@ namespace EL4S.Realtime
         public void SendState(PeerState state)
         {
             _ = SendJson(new StateInMessage { type = "state", payload = state });
+        }
+
+        public void SendAlchemyResult(AlchemyResult result)
+        {
+            _ = SendJson(new AlchemyResultInMessage { type = "alchemy-result", result = result });
         }
 
         public void Disconnect()
@@ -204,9 +214,13 @@ namespace EL4S.Realtime
 
         [Serializable] private class MatchMessage { public string type; public string clientId; }
         [Serializable] private class StateInMessage { public string type; public PeerState payload; }
+        [Serializable] private class AlchemyResultInMessage { public string type; public AlchemyResult result; }
 
-        // Covers every server->client shape (joined/peer-joined/peer-left/state/error) in one
-        // parse; JsonUtility leaves fields absent from the JSON at their default value.
+        // Covers every server->client shape (joined/peer-joined/peer-left/state/
+        // alchemy-result/error) in one parse; JsonUtility leaves fields absent from
+        // the JSON at their default value. "result" is a separate field from
+        // "payload" (rather than reusing it for both state and alchemy-result)
+        // since JsonUtility can't deserialize one field into two different types.
         [Serializable]
         private class IncomingMessage
         {
@@ -214,6 +228,7 @@ namespace EL4S.Realtime
             public string clientId;
             public string[] peers;
             public PeerState payload;
+            public AlchemyResult result;
             public string message;
         }
     }

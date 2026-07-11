@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { WebSocket } from "ws";
-import type { ServerToClientMessage } from "./protocol.js";
+import type { AlchemyResultPayload, ServerToClientMessage } from "./protocol.js";
 
 const ROOM_CAPACITY = 2;
 
@@ -102,14 +102,18 @@ export class RoomRegistry {
   }
 
   broadcastState(ws: WebSocket, payload: unknown): void {
+    this.broadcastFromSender(ws, (clientId) => ({ type: "state", clientId, payload }));
+  }
+
+  broadcastAlchemyResult(ws: WebSocket, result: AlchemyResultPayload): void {
+    this.broadcastFromSender(ws, (clientId) => ({ type: "alchemy-result", clientId, result }));
+  }
+
+  private broadcastFromSender(ws: WebSocket, buildMessage: (clientId: string) => ServerToClientMessage): void {
     const info = this.memberOf.get(ws);
     if (!info) return;
 
-    this.broadcast(info.roomId, info.clientId, {
-      type: "state",
-      clientId: info.clientId,
-      payload,
-    });
+    this.broadcast(info.roomId, info.clientId, buildMessage(info.clientId));
   }
 
   private broadcast(roomId: string, excludeClientId: string, message: ServerToClientMessage): void {
